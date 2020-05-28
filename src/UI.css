@@ -1,0 +1,21 @@
+.slider-chunk {
+  border-right: 1px solid;
+  float:left;
+  margin:0.25em;
+  padding:0.5em;
+}
+
+.slider-label {
+  font-size:0.8em;
+  font-family: sans-serif;
+}
+
+.slider-label-value{
+  font-weight: bold;
+  padding-left:0.5em;
+}
+
+.slider {
+  width:7.5em;
+  float:left;
+}
