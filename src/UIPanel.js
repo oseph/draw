@@ -10,44 +10,22 @@ class UIPanel extends React.Component {
       brushSize: props.brushSize,
       opacity: props.opacity,
       color: props.color,
+      refreshBrushPreview: false
     }
-    this.brushSizePreviewRef = React.createRef();
-
-    this.opacitySliderRef = React.createRef();
-    this.brushSizeSliderRef = React.createRef();
-    this.colorSliderRef = React.createRef();
-  }
-
-  onComponentDidMount() {
-    this.setState({
-      brushSize: this.props.brushSize,
-      opacity: this.props.opacity,
-      color: this.props.color
-    });
+    this.brushSizePreviewRef = React.createRef()
   }
 
   setBrushSize(num) {
-    this.setState({
-      brushSize: num,
-    });
     this.brushSizePreviewRef.current.setBrushSize(num);
-    this.brushSizeSliderRef.current.update(num);
+    this.setState({brushSize:num});
   }
 
   setOpacity(num) {
-    this.setState({
-      opacity: num,
-    });
     this.brushSizePreviewRef.current.setOpacity(num);
-    this.opacitySliderRef.current.update(num);
   }
 
   setBrushColor(num) {
-    this.setState({
-      color: num,
-    });
     this.brushSizePreviewRef.current.setColor(num);
-    this.colorSliderRef.current.update(num);
   }
 
   render() {
@@ -55,30 +33,27 @@ class UIPanel extends React.Component {
       <div>
         <Slider 
           name="size"
-          ref={this.brushSizeSliderRef} 
-          value={this.state.brushSize} 
-          min="1" max="50" stepSize="0.5"
+          value={this.props.brushSize} 
+          min="1" max="50" stepSize="1"
           onChange={this.props.onBrushSizeChange}>
         </Slider>
         <Slider 
           name="opacity"
-          ref={this.opacitySliderRef} 
-          value={this.state.opacity} 
+          value={this.props.opacity}
+          min="0" max="1" stepSize="0.01"
           onChange={this.props.onOpacityChange}>
         </Slider>
         <Slider 
-          name="grey"
-          ref={this.colorSliderRef} 
-          value={this.state.color}
+          name="color" // color
+          value={this.props.color}
           min="0" max="255" stepSize="1"
           onChange={this.props.onColorChange}>
         </Slider>
         <BrushSizePreview 
           ref={this.brushSizePreviewRef}
-          brushSize={this.state.brushSize}
-          opacity={this.state.opacity}
-          onChange={this.props.onBrushSizeChange}
-          color={this.state.color}
+          brushSize={this.props.brushSize}
+          opacity={this.props.opacity}
+          color={this.props.color}
         />
       </div>
     );

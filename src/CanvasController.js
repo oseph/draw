@@ -3,12 +3,23 @@ import UIPanel from './UIPanel';
 import Pressure from 'pressure';
 
 var mouseDown = 0;
+
 document.body.onmousedown = function() { 
-  ++mouseDown;
+  mouseDown = 1;
 }
+document.body.ontouchstart = function() {
+  mouseDown = 1;
+}
+
 document.body.onmouseup = function() {
-  --mouseDown;
+  mouseDown = 0;
 }
+
+document.body.ontouchend = function() {
+   mouseDown = 0;
+}
+
+
 
 
 class CanvasController extends React.Component {
@@ -24,11 +35,13 @@ class CanvasController extends React.Component {
     super(props);
     this.state = {
       opacity: 1,
-      brushSize: 5,
+      brushSize: 10,
       color: 0,
       pressure: 0.5,
       mouseOut: false,
     };
+
+    document.title = "draw"
 
     this.canvasRef = React.createRef();
     this.brushPanelRef = React.createRef();
@@ -103,9 +116,6 @@ class CanvasController extends React.Component {
 
   mouseUp = ()  => {
     if (mouseDown === 0) {
-      // this.setState({ 
-      //   mouseDown: false
-      // });
       this.endDrawState();
     } 
   }
@@ -214,6 +224,14 @@ class CanvasController extends React.Component {
     })
   }
 
+  colorChange = (e) => {
+    this.brushPanelRef.current.setBrushColor(e.target.value);
+    this.setState({
+      color: e.target.value,
+    })
+    console.log(e.target.value);
+  }
+
   clearScene = () => {
     var ctx = this.canvasRef.current.getContext('2d');
     ctx.globalAlpha = 1.0;
@@ -231,22 +249,13 @@ class CanvasController extends React.Component {
     link.click();
   }
 
-  colorChange = (e) => {
-    this.brushPanelRef.current.setBrushColor(e.target.value);
-    this.setState({
-      color: e.target.value,
-    })
-    console.log(e.target.value);
-  }
 
   keyDown = (event) => {
     var brushSize = this.state.brushSize;
-
     var keydown = (event.key === "[" || event.key === "]");
     switch (event.key) {
       case "]":
         // increase brushSize
-        // console.log(event.key)
         if (brushSize < 5) brushSize += 1;
         else if (brushSize < 10) brushSize += 2;
         else if (brushSize < 50) brushSize += 5;
@@ -254,6 +263,7 @@ class CanvasController extends React.Component {
         if (brushSize > 50) brushSize = 50;
         break;
       case "[":
+        // increase brushSize
         if (brushSize < 5) brushSize -= 1;
         else if (brushSize < 10) brushSize -= 2;
         else if (brushSize <= 50) brushSize -= 5;
@@ -264,7 +274,7 @@ class CanvasController extends React.Component {
     }
 
     if (keydown) {
-      this.brushPanelRef.current.setBrushSize(brushSize);
+      // this.brushPanelRef.current.setBrushSize(brushSize);
       this.setState({
         brushSize: brushSize,
       })

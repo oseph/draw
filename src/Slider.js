@@ -12,19 +12,13 @@ class Slider extends React.Component {
     }
   }
 
-  update(val) {
-    this.setState({
-      value: val
-    });
-  }
-
   render() {
     return(
       <div className="slider-chunk">
         <div className="slider-label">
-          {this.props.name}<span className="slider-label-value">{this.state.value}</span>
+          {this.props.name}<span className="slider-label-value">{this.props.value}</span>
         </div>
-        <input className="slider" type="range" min={this.state.min} max={this.state.max} value={this.state.value} step={this.state.stepSize} onChange={this.props.onChange}/>
+        <input className="slider" type="range" min={this.props.min} max={this.props.max} value={this.props.value} step={this.props.stepSize} onChange={this.props.onChange}/>
       </div>
     );
   }

@@ -7,8 +7,8 @@ class BrushSizePreview extends React.Component {
       width: 50.0,
       height: 50.0,
       color: props.color,
-      brushSize: props.brushSize,
       opacity: props.opacity,
+      brushSize: props.brushSize
     }
     this.canvasRef = React.createRef();
    }
@@ -19,14 +19,13 @@ class BrushSizePreview extends React.Component {
 
   redraw() {
     var context = this.canvasRef.current.getContext('2d');
-    let scaled_size = this.state.brushSize/100.0;
+    let scaled_size = this.state.brushSize/50.0;
     context.clearRect(0,0,this.state.width, this.state.height);
-    context.fillStyle = "lightGray";
+    context.fillStyle = "lightgrey";
     context.fillRect(0,0,this.state.width, this.state.height);
-    // console.log(this.state.color);
     context.fillStyle = "rgba("+this.state.color+","+this.state.color+","+this.state.color+", "+this.state.opacity+")";
     context.beginPath();
-    context.arc(this.state.width/2, this.state.height/2, scaled_size*50, 0, 2 * Math.PI);
+    context.arc(this.state.width/2, this.state.height/2, scaled_size*25, 0, 2 * Math.PI);
     context.fill();
     context.closePath();
   }
@@ -53,6 +52,7 @@ class BrushSizePreview extends React.Component {
     this.redraw();
   }
 
+
   render() {
     return (
       <div>
@@ -65,7 +65,6 @@ class BrushSizePreview extends React.Component {
       </div>
     );
   }
-
 }
 
 export default BrushSizePreview;
