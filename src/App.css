@@ -1,8 +1,13 @@
 body, html {
   overflow: hidden;
   background-color: rgb(240,240,240);
+  user-select: none;
 }
 
 canvas {
   user-select: none;
+  -webkit-user-select: none; /* webkit (safari, chrome) browsers */
+    -moz-user-select: none; /* mozilla browsers */
+    -khtml-user-select: none; /* webkit (konqueror) browsers */
+    -ms-user-select: none; /* IE10+ */
 }

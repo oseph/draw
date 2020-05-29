@@ -3,7 +3,7 @@ import UIPanel from './UIPanel';
 import Pressure from 'pressure';
 
 var mouseDown = 0;
-
+var brushSize = 15;
 document.body.onmousedown = function() { 
   mouseDown = 1;
 }
@@ -16,15 +16,12 @@ document.body.onmouseup = function() {
 }
 
 document.body.ontouchend = function() {
-   mouseDown = 0;
+  mouseDown = 0;
 }
-
-
-
 
 class CanvasController extends React.Component {
   static defaultProps = {
-    width: 0.8*window.innerWidth,
+    width: 0.9*window.innerWidth,
     height: 0.7*window.innerHeight,
     brushCol: 'black',
     mouseLoc: [0, 0],
@@ -35,7 +32,7 @@ class CanvasController extends React.Component {
     super(props);
     this.state = {
       opacity: 1,
-      brushSize: 10,
+      brushSize: brushSize,
       color: 0,
       pressure: 0.5,
       mouseOut: false,
@@ -45,11 +42,14 @@ class CanvasController extends React.Component {
 
     this.canvasRef = React.createRef();
     this.brushPanelRef = React.createRef();
-    this.sliderChange = this.brushSizeChange.bind(this);
     this.opacityChange = this.opacityChange.bind(this);
     this.colorChange = this.colorChange.bind(this);
     this.keyDown = this.keyDown.bind(this);
-    this.pts = []; 
+
+    document.body.onkeydown = this.keyDown;
+
+    this.pts = []; // current line being drawn
+    this.lineHistory = []; // for the undostack. 
 
     // this is the graphics context we brush strokes onto. gets pushed down main canvas on mouse up
     this.drawLayer = document.createElement('canvas');
@@ -102,7 +102,7 @@ class CanvasController extends React.Component {
         });
         this.mouseUp();
       }
-    }, {polyfill: false});
+    }, {polyfill: false, preventSelect:true});
     this.clearScene();
   }
 
@@ -178,7 +178,6 @@ class CanvasController extends React.Component {
       ctx.drawImage(this.drawingToDate,0,0);
       ctx.globalAlpha = this.state.opacity;
       ctx.drawImage(context.canvas,0,0);
-      
       //draw cursor
       this.drawCursor(mousePos, ctx);
   }
@@ -251,11 +250,13 @@ class CanvasController extends React.Component {
 
 
   keyDown = (event) => {
+    event.preventDefault();
     var brushSize = this.state.brushSize;
     var keydown = (event.key === "[" || event.key === "]");
     switch (event.key) {
       case "]":
         // increase brushSize
+        console.log("keyDown: increase brushsize.");
         if (brushSize < 5) brushSize += 1;
         else if (brushSize < 10) brushSize += 2;
         else if (brushSize < 50) brushSize += 5;
@@ -264,6 +265,7 @@ class CanvasController extends React.Component {
         break;
       case "[":
         // increase brushSize
+        console.log("keyDown: decrease brushsize.");
         if (brushSize < 5) brushSize -= 1;
         else if (brushSize < 10) brushSize -= 2;
         else if (brushSize <= 50) brushSize -= 5;
@@ -274,7 +276,7 @@ class CanvasController extends React.Component {
     }
 
     if (keydown) {
-      // this.brushPanelRef.current.setBrushSize(brushSize);
+      this.brushPanelRef.current.setBrushSize(brushSize);
       this.setState({
         brushSize: brushSize,
       })
@@ -311,7 +313,6 @@ class CanvasController extends React.Component {
         onTouchMove={this.mouseMove}
         onMouseUp={this.mouseUp} 
         onTouchEnd={this.mouseUp}
-        onKeyDown={this.keyDown}
         
         onMouseOut={() => {
           if (mouseDown === 1) {
@@ -328,7 +329,6 @@ class CanvasController extends React.Component {
             this.draw(e);
           }
         }}
-        tabIndex = "-1"
         />
 
       <UIPanel 
