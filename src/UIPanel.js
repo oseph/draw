@@ -35,20 +35,17 @@ class UIPanel extends React.Component {
           name="size"
           value={this.props.brushSize} 
           min="1" max="50" stepSize="1"
-          onChange={this.props.onBrushSizeChange}>
-        </Slider>
+          onChange={this.props.onBrushSizeChange} />
         <Slider 
           name="opacity"
           value={this.props.opacity}
           min="0" max="1" stepSize="0.01"
-          onChange={this.props.onOpacityChange}>
-        </Slider>
+          onChange={this.props.onOpacityChange} />
         <Slider 
           name="color" // color
           value={this.props.color}
           min="0" max="255" stepSize="1"
-          onChange={this.props.onColorChange}>
-        </Slider>
+          onChange={this.props.onColorChange} />
         <BrushSizePreview 
           ref={this.brushSizePreviewRef}
           brushSize={this.props.brushSize}
