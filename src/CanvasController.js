@@ -3,8 +3,12 @@ import UIPanel from './UIPanel';
 import Pressure from 'pressure';
 
 let mouseDown = false;
+let mouseDragged = false;
 let brushSize = 15;
 let pressure  = 0.5;
+let mouse = {};
+
+let mouseMode = "mouse";
 
 document.body.addEventListener("mousedown", function() { 
   mouseDown = true;
@@ -27,7 +31,7 @@ class CanvasController extends React.Component {
     width: 0.9*window.innerWidth,
     height: 0.7*window.innerHeight,
     brushCol: 'black',
-    mouseLoc: [0, 0],
+    mouseLoc: {x:0, y:0},
     prevMouseLoc: [0, 0]
   };
 
@@ -39,6 +43,7 @@ class CanvasController extends React.Component {
       color: 0,
       pressure: 0.5,
       mouseOut: false,
+      mouseDragged: false
     };
 
     document.title = "draw"
@@ -66,8 +71,8 @@ class CanvasController extends React.Component {
     this.drawingToDate.height = this.props.height;
 
     this.brushCursor = document.createElement('canvas');
-    this.brushCursor.width = this.state.brushSize;
-    this.brushCursor.height = this.state.brushSize;
+    this.brushCursor.width = brushSize;
+    this.brushCursor.height = brushSize;
     this.brushCursor_ctx = this.brushCursor.getContext("2d");
   }
 
@@ -76,15 +81,12 @@ class CanvasController extends React.Component {
     // this.canvasRef.current.addEventListener("mouseup", this.mouseUp);
     // this.canvasRef.current.addEventListener("mousemove", this.mouseMove);
 
-    this.canvasRef.current.addEventListener("pointerdown", this.mouseDown);
-    this.canvasRef.current.addEventListener("pointerup", this.mouseUp);
-    this.canvasRef.current.addEventListener("pointercancel", this.mouseUp);
-    this.canvasRef.current.addEventListener("pointermove", this.mouseMove);
-    this.canvasRef.current.addEventListener("ongotpointercapture", this.mouseDown);
-    this.canvasRef.current.addEventListener("onlostpointercapture", this.mouseUp);
-
-    // this.canvasRef.current.onpointerdown = this.downHandler;
-    // this.canvasRef.current.onpointercancel = this.cancelHandler;
+    // this.canvasRef.current.addEventListener("pointerdown", this.mouseDown);
+    // this.canvasRef.current.addEventListener("pointerup", this.mouseUp);
+    // this.canvasRef.current.addEventListener("pointercancel", this.mouseUp);
+    // this.canvasRef.current.addEventListener("pointermove", this.mouseMove);
+    // this.canvasRef.current.addEventListener("ongotpointercapture", this.mouseDown);
+    // this.canvasRef.current.addEventListener("onlostpointercapture", this.mouseUp);
 
     this.main_ctx = this.canvasRef.current.getContext('2d');
     this.main_ctx.lineWidth = brushSize;
@@ -106,94 +108,98 @@ class CanvasController extends React.Component {
 
     Pressure.set('#mainCanvas', {
       change: (force, event) => {
-        // console.log(event.pointerType)
         pressure = force
-        // this.mouseMove(event);
       },
-      start: (e) => {
-        // mouseDown = true;
-        // this.mouseDown(e);
-      },
-      end: () => {
-        // mouseDown = false;
-        // pressure = 0.5;
-        // this.mouseUp();
-      }
-    }, {polyfill: false, preventSelect:true});
+    }, {polyfill: false, });
     this.clearScene();
   }
 
   endDrawState() {
     this.drawing_ctx.clearRect(0,0,this.drawingToDate.width, this.drawingToDate.width);
     this.drawing_ctx.drawImage(this.main_ctx.canvas, 0,0);
-    // this.brushCursor_ctx.clearRect(0,0, this.brushCursor.width, this.brushCursor.height);
-    // if (this.strokeHistory.length == 10) {
-    //   this.strokeHistory.shift();
-    // }
-    // this.strokeHistory.push(this.pts);
     this.pts = [];
   }
 
   mouseUp = () => {
     mouseDown = false;
-    // this.brushCursor_ctx.clearRect(0,0, this.brushCursor.width, this.brushCursor.height);
+    mouseDragged = false;
     this.endDrawState();
   }
 
   getMousePos = (e) => {   
-    return [
-      (e.pageX || e.touches[0].pageX) - this.bbox.left,
-      (e.pageY || e.touches[0].pageY) - this.bbox.top
-    ];
+    mouse.x = (e.pageX || e.touches[0].pageX) - this.bbox.left;
+    mouse.y = (e.pageY || e.touches[0].pageY) - this.bbox.top
+    // return {
+    //   x: (e.pageX || e.touches[0].pageX) - this.bbox.left,
+    //   y: (e.pageY || e.touches[0].pageY) - this.bbox.top
+    // }
   }
 
   mouseMove = (e) => {
-    let mousePos = this.getMousePos(e);
-    this.setState({
-      mouseLoc: mousePos,
-    });
-    
+    this.getMousePos(e);
     if (mouseDown) {
-      let point = {
-        pos: mousePos,
-        pressure: pressure
-      }
-      this.pts.push(point);
+      mouseDragged = true;
+      this.addPointAndCheckDistance(mouse);
       this.draw(e)
     } else {
       this.main_ctx.clearRect(0,0, this.canvasRef.width, this.canvasRef.height);
       this.main_ctx.drawImage(this.drawingToDate,0,0);
-      if (e.pointerType !== "pen") {
+      // if (e.pointerType !== "pen") {
         // console.log(e.pointerType)
-        this.drawCursor(mousePos, this.main_ctx);
-      }
+        this.drawCursor(mouse, this.main_ctx);
+      // }
     }
+    this.setState({
+      mouseLoc: mouse,      
+    });
   }
 
   mouseDown = (e) => {
+    if (e.pointerType === "pen") mouseMode = "pen" 
+    else mouseMode = "mouse"
+
     mouseDown = true;
-    let mousePos = this.getMousePos(e);
-    let point = {
-      pos: mousePos,
-      pressure: pressure
-    }
-    this.pts.push(point);
-    this.draw(e);
+    this.getMousePos(e);
+    this.addPointAndCheckDistance(mouse);
+    this.draw();
     this.setState({
-      mouseLoc: mousePos,
+      mouseLoc: mouse,
       mouseOut: false
     });
   }
 
-  draw = (e) => {
+  addPointAndCheckDistance(pt) {
+    // if (this.pts.length > 0) {
+    //   let last_pt = this.pts[this.pts.length-1];
+    //   let dist = Math.sqrt( Math.pow((pt.x-last_pt.x), 2) + Math.pow((pt.y-last_pt.y), 2));
+    //   if (dist > 5.0) {
+    //     let px = (pt.x + last_pt.x) / 2;
+    //     let py = (pt.y + last_pt.y) / 2;
+    //     let point = {
+    //       x: px,
+    //       y: py,
+    //       pressure: pressure
+    //     }
+    //     this.pts.push(point);
+    //   }
+    // }
+    let point = {
+      x: pt.x,
+      y: pt.y,
+      pressure: pressure
+    }
+    this.pts.push(point);
+  }
+
+  draw = () => {
     this.drawLayer_ctx.clearRect(0,0, this.drawLayer.width, this.drawLayer.height);
     this.drawLayer_ctx.strokeStyle = `rgba(${this.state.color},${this.state.color},${this.state.color}, 1.0)`;
 
-    if (this.pts.length === 1) {
+    if (this.pts.length === 1 && !mouseDragged) {
       this.drawLayer_ctx.fillStyle = this.drawLayer_ctx.strokeStyle;
       this.drawLayer_ctx.beginPath();
-      let startPos = this.pts[0].pos;
-      this.drawLayer_ctx.arc(startPos[0], startPos[1], (this.state.brushSize/2)*pressure, 0, 2*Math.PI);
+      let startPos = this.pts[0];
+      this.drawLayer_ctx.arc(startPos.x, startPos.y, (brushSize/2)*pressure, 0, 2*Math.PI);
       this.drawLayer_ctx.fill();
       this.drawLayer_ctx.closePath();
 
@@ -205,6 +211,7 @@ class CanvasController extends React.Component {
     this.main_ctx.drawImage(this.drawingToDate,0,0);
     this.main_ctx.globalAlpha = this.state.opacity;
     this.main_ctx.drawImage(this.drawLayer,0,0);
+    
   }
 
   // TODO
@@ -214,42 +221,36 @@ class CanvasController extends React.Component {
     }
   }
 
-  drawCursor(mousePos, ctx) {
-    if (!mouseDown) {
-      this.brushCursor.width =  this.state.brushSize;
-      this.brushCursor.height = this.state.brushSize;
+  drawCursor() {
+    if (!mouseDown && !mouseDragged) {
+      this.brushCursor.width =  brushSize;
+      this.brushCursor.height = brushSize;
+      this.brushCursor_ctx = this.brushCursor.getContext("2d");
+      this.brushCursor_ctx.lineStyle ="black"
       this.brushCursor_ctx.beginPath();
-      this.brushCursor_ctx.arc(this.brushCursor.width/2, this.brushCursor.height/2, this.state.brushSize/4, 0, Math.PI*2);
+      this.brushCursor_ctx.arc(this.brushCursor.width/2, this.brushCursor.height/2, brushSize/4, 0, Math.PI*2);
       // this.brushCursor_ctx.closePath();
       this.brushCursor_ctx.stroke();
-      ctx.drawImage(this.brushCursor, mousePos[0]-this.state.brushSize/2, mousePos[1]-this.state.brushSize/2);
+      this.main_ctx.drawImage(this.brushCursor, mouse.x-brushSize/2, mouse.y-brushSize/2);
     }
   }
   
   /** pulled this from http://jsfiddle.net/NWBV4/10/ .. */
-  // drawPoints(points, ctx) {
-  //   if (points.length < 6) return;
-  //   ctx.beginPath(); 
-  //   ctx.moveTo(points[0].pos[0], points[0].pos[1]);
-  //   let i = 0;
-  //   for (i = 1; i < points.length - 2; i++) {
-  //     let c = (points[i].pos[0] + points[i + 1].pos[0]) / 2;
-  //     let d = (points[i].pos[1] + points[i + 1].pos[1]) / 2;
-  //     ctx.quadraticCurveTo(points[i].pos[0], points[i].pos[1], c, d);
-  //   }
-  //   ctx.quadraticCurveTo(points[i].pos[0], points[i].pos[1], points[i + 1].pos[0], points[i + 1].pos[1]); 
-  //   ctx.stroke();
-  //   // ctx.closePath();
-  // }
+  // drawPoints(points, ctx) {}
 
   drawStroke(points, context) {
     for (let i = 1; i < points.length; i++) {
-      let start_pos = points[i-1].pos;
-      let end_pos = points[i].pos;
+      let presh;
+      if (mouseMode === "pen" && (i === 1 || i === points.length-1)) {
+        presh = (points[i].pressure + points[i-1].pressure)*0.6 * (brushSize);
+      } else {
+        presh = (points[i].pressure + points[i-1].pressure)*0.5 * (brushSize);
+      }
+      let start_pos = points[i-1];
+      let end_pos = points[i];
       context.beginPath();
-      context.moveTo(start_pos[0], start_pos[1]);
-      context.lineTo(end_pos[0], end_pos[1]);
-      let presh = (points[i].pressure) * (this.state.brushSize);
+      context.moveTo(start_pos.x, start_pos.y);
+      context.lineTo(end_pos.x, end_pos.y);
       context.lineWidth = presh;
       context.stroke();
       context.closePath();
@@ -267,13 +268,15 @@ class CanvasController extends React.Component {
     let el = document.getElementById("mainCanvas");
     // Release the pointer capture
     mouseDown = false;
+    mouseDragged = false;
     el.releasePointerCapture(ev.pointerId);
   }
 
   brushSizeChange = (e) => {
     this.brushPanelRef.current.setBrushSize(e.target.value);
+    brushSize = e.target.value
     this.setState({
-      brushSize: e.target.value,
+      brushSize: brushSize,
     })
   }
 
@@ -289,20 +292,23 @@ class CanvasController extends React.Component {
     this.setState({
       color: e.target.value,
     })
-    console.log(e.target.value);
   }
 
   clearScene = () => {
+    let main_ctx = this.canvasRef.current.getContext('2d');
+    main_ctx.globalAlpha = 1.0;
+    main_ctx.fillStyle = "white";
+    main_ctx.fillRect(0,0,this.canvasRef.width, this.canvasRef.height);
+    
 
-    this.main_ctx.globalAlpha = 1.0;
-    this.main_ctx.fillStyle = "white";
-    this.main_ctx.fillRect(0,0,this.canvasRef.width, this.canvasRef.height);
-
+    this.drawing_ctx.globalAlpha = 1.0;
     this.drawing_ctx.fillStyle = "white";
     this.drawing_ctx.fillRect(0,0,this.drawingToDate.width, this.drawingToDate.height);
 
+    this.drawLayer_ctx.globalAlpha = 1.0;
     this.drawLayer_ctx.fillStyle = "white";
     this.drawLayer_ctx.fillRect(0,0, this.drawLayer.width, this.drawLayer.height);
+    this.draw();
   }
 
   downloadImage = () => {
@@ -371,6 +377,18 @@ class CanvasController extends React.Component {
         ref={this.canvasRef} 
         width={width} 
         height={height} 
+    //     this.canvasRef.current.addEventListener("pointerdown", this.mouseDown);
+    // this.canvasRef.current.addEventListener("pointerup", this.mouseUp);
+    // this.canvasRef.current.addEventListener("pointercancel", this.mouseUp);
+    // this.canvasRef.current.addEventListener("pointermove", this.mouseMove);
+    // this.canvasRef.current.addEventListener("ongotpointercapture", this.mouseDown);
+    // this.canvasRef.current.addEventListener("onlostpointercapture", this.mouseUp);
+        onPointerDown={this.mouseDown}
+        onPointerUp={this.mouseUp}
+        onPointerCancel={this.mouseUp}
+        onPointerMove={this.mouseMove}
+        onLostPointerCapture={this.mouseUp}
+        onGotPointerCapture={this.mouseDown}
         // onMouseDown={this.mouseDown} 
         // onTouchStart={this.mouseDown} 
         // onMouseMove={this.mouseMove} 
@@ -378,17 +396,19 @@ class CanvasController extends React.Component {
         // onMouseUp={this.mouseUp} 
         // onTouchEnd={this.mouseUp}
         
-        onMouseOut={(e) => {
-          this.draw(e)
+        onPointerOut={(e) => {
+          this.draw()
           this.endDrawState();
+          mouseDragged = false;
         }}
         
         onMouseEnter={ (e) => {
           if (mouseDown) {
+            mouseDragged = true;
             this.setState({
               mouseOut : false,
             });
-            this.draw(e);
+            this.draw();
           }
         }}
         />
