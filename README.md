@@ -11,12 +11,12 @@
 * Enjoy!
 
 ### Compatibility:
-- [x] FireFox macOS
-- - [x] Wacom Cintiq
-- - [x] Wacom Intuos
-- [x] Safari iOS + Apple Pencil
-- [] Windows 😢
-- [] Safari macOS 😢
+- :white_check_mark: FireFox macOS
+- - :white_check_mark: Wacom Cintiq
+- - :white_check_mark: Wacom Intuos
+- :white_check_mark: Safari iOS + Apple Pencil
+- [ ] Windows 😢
+- [ ] Safari macOS 😢
 
 ## Amazing Features
 
