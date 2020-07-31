@@ -1,6 +1,6 @@
-# Web based sketchin` 
+# Web based sketchin
 
-**Requirements**: npm and see browser/OS compatibility below.
+**Requirements**: npm, also see browser/OS compatibility below.
 
 ## Installation + Tinkering
 
