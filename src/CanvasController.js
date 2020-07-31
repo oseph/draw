@@ -44,8 +44,6 @@ class CanvasController extends React.Component {
       mouseDragged: false
     };
 
-    document.title = "draw"
-
     this.canvasRef = React.createRef();
     this.brushPanelRef = React.createRef();
     this.opacityChange = this.opacityChange.bind(this);
@@ -102,7 +100,7 @@ class CanvasController extends React.Component {
     this.clearScene();
   }
 
-  endDrawState() {
+  endBrushStroke() {
     this.drawingToDate_ctx.clearRect(0,0,this.drawingToDate.width, this.drawingToDate.width);
     this.drawingToDate_ctx.drawImage(this.main_ctx.canvas, 0,0);
     this.strokeHistory.push(this.currentBrushStroke)
@@ -112,8 +110,12 @@ class CanvasController extends React.Component {
   mouseUp = () => {
     mouseDown = false;
     mouseDragged = false;
-    this.endDrawState();
-    this.draw();
+    this.redoStack = [];
+    this.endBrushStroke();
+    this.clearScene();
+    this.drawStrokeHistory();
+    this.drawUserInput();
+    this.renderDrawing();
   }
 
   getMousePos = (e) => {   
@@ -126,7 +128,8 @@ class CanvasController extends React.Component {
     if (mouseDown) {
       mouseDragged = true;
       this.addPoint(mouseLocation);
-      this.draw(e)
+      this.drawUserInput();
+      this.renderDrawing();
     } else {
       this.main_ctx.clearRect(0,0, this.canvasRef.width, this.canvasRef.height);
       this.main_ctx.drawImage(this.drawingToDate,0,0);
@@ -141,11 +144,13 @@ class CanvasController extends React.Component {
     mouseDown = true;
     this.getMousePos(e);
     this.addPoint(mouseLocation);
-    this.draw();
     this.setState({
       mouseLoc: mouseLocation,
       mouseOut: false
     });
+    // this.clearScene();
+    this.drawUserInput();
+    this.renderDrawing();
   }
 
   addPoint(point) {
@@ -153,35 +158,27 @@ class CanvasController extends React.Component {
       x: point.x,
       y: point.y,
       pressure: pressure,
-      color: this.state.color
+      color: this.state.color,
+      brushSize: this.state.brushSize,
+      opacity: this.state.opacity
     }
     this.currentBrushStroke.push(p);
   }
 
-  // draw the scene (e.g. current brush stroke, previou)
-  draw = () => {
+  // draw the scene (e.g. current brush stroke and previous strokes)
+  drawUserInput = () => {
     this.drawLayer_ctx.clearRect(0,0, this.drawLayer.width, this.drawLayer.height);
-    this.drawLayer_ctx.strokeStyle = `rgba(${this.state.color},${this.state.color},${this.state.color}, 1.0)`;
+    this.drawStroke(this.currentBrushStroke, true);
+  }
 
-    if (this.currentBrushStroke.length === 1 && !mouseDragged) {
-      this.drawLayer_ctx.fillStyle = this.drawLayer_ctx.strokeStyle;
-      this.drawLayer_ctx.beginPath();
-      let startPos = this.currentBrushStroke[0];
-      this.drawLayer_ctx.arc(startPos.x, startPos.y, (brushSize/2)*pressure, 0, 2*Math.PI);
-      this.drawLayer_ctx.fill();
-      this.drawLayer_ctx.closePath();
-    } else if (this.currentBrushStroke.length > 1) {
-      this.drawStroke(this.currentBrushStroke, this.drawLayer_ctx);
-    }
 
-    for (let i = 1; i < this.strokeHistory.length; ++i) {
-      this.drawStroke(this.strokeHistory[i], this.drawLayer_ctx)
-    }
-    
-    this.drawingToDate_ctx.drawImage(this.drawLayer, 0, 0)
+  renderDrawing = () => {
+    // this.drawingToDate_ctx.drawImage(this.drawLayer, 0, 0)
     this.main_ctx.fillStyle = "white"
-    this.main_ctx.fillRect(0,0, this.main_ctx.canvas.width, this.main_ctx.canvas.height)
-    this.main_ctx.drawImage(this.drawLayer, 0, 0);
+    this.main_ctx.globalAlpha = 1.0
+    this.main_ctx.clearRect(0,0, this.main_ctx.canvas.width, this.main_ctx.canvas.height)
+    this.main_ctx.drawImage(this.drawingToDate, 0, 0);
+    this.drawingToDate_ctx.globalAlpha = 1.0
   }
 
   drawCursor() {
@@ -189,7 +186,7 @@ class CanvasController extends React.Component {
       this.brushCursor.width =  brushSize;
       this.brushCursor.height = brushSize;
       this.brushCursor_ctx = this.brushCursor.getContext("2d");
-      this.brushCursor_ctx.lineStyle ="black"
+      this.brushCursor_ctx.lineStyle = "black"
 
       this.brushCursor_ctx.beginPath();
       this.brushCursor_ctx.arc(this.brushCursor.width/2, this.brushCursor.height/2, brushSize/4, 0, Math.PI*2);
@@ -199,22 +196,44 @@ class CanvasController extends React.Component {
     }
   }
 
-  drawStroke(points, context) {
-    if (points === undefined || points.length < 1) {return}
+  drawStroke(points, isCurrentStroke) {
+    if (points === undefined || points.length < 1) { return; }
     let color = points[0].color;
-    context.lineStyle = `rgba(${color},${color},${color},1.0)`
-    
-    for (let i = 1; i < points.length; i++) {
-      let presh = (points[i].pressure + points[i-1].pressure)*0.5 * (brushSize);
-      let start_pos = points[i-1];
-      let end_pos = points[i];
-      context.beginPath();
-      context.moveTo(start_pos.x, start_pos.y);
-      context.lineTo(end_pos.x, end_pos.y);
-      context.lineWidth = presh;
-      context.lineStyle = "black"
-      context.stroke();
-      context.closePath();
+    let color_str = `rgba(${color}, ${color}, ${color}, 1.0)`;
+    this.drawLayer_ctx.strokeStyle = color_str;
+    this.drawLayer_ctx.fillStyle = color_str;
+
+    this.drawLayer_ctx.clearRect(0,0,this.drawLayer_ctx.width, this.drawLayer_ctx.height);
+    if (points.length === 1) {
+      this.drawLayer_ctx.beginPath();
+      let startPos = points[0];
+      this.drawLayer_ctx.arc(startPos.x, startPos.y, (brushSize/2)*pressure, 0, 2*Math.PI);
+      this.drawLayer_ctx.fill();
+      this.drawLayer_ctx.closePath();
+    } else {
+      for (let i = 1; i < points.length; i++) {
+        let presh = (points[i].pressure + points[i-1].pressure) * 0.5 * (points[0].brushSize);
+        let start_pos = points[i-1];
+        let end_pos = points[i];
+        this.drawLayer_ctx.globalAlpha = 1.0
+        this.drawLayer_ctx.beginPath();
+        this.drawLayer_ctx.moveTo(start_pos.x, start_pos.y);
+        this.drawLayer_ctx.lineTo(end_pos.x, end_pos.y);
+        this.drawLayer_ctx.lineWidth = presh;
+        this.drawLayer_ctx.stroke();
+        this.drawLayer_ctx.closePath();
+      }
+      
+    }
+    this.drawingToDate_ctx.globalAlpha = points[0].opacity
+    this.drawingToDate_ctx.drawImage(this.drawLayer,0,0);
+    this.drawLayer_ctx.clearRect(0,0,this.drawLayer_ctx.width,this.drawLayer_ctx.height)
+  }
+
+  drawStrokeHistory = () => {
+    for (let i = 0; i < this.strokeHistory.length; ++i) {
+      let stroke = this.strokeHistory[i];
+      this.drawStroke(stroke, false)
     }
   }
 
@@ -258,7 +277,9 @@ class CanvasController extends React.Component {
   resetDrawing = () => {
     this.currentBrushStroke = [];
     this.strokeHistory = [];
+    this.redoStack = [];
     this.clearScene();
+    this.renderDrawing();
   }
 
   clearScene = () => {
@@ -284,24 +305,26 @@ class CanvasController extends React.Component {
   }
   
   undo = () => {
-    if (this.strokeHistory.length > 1) {
+    if (this.strokeHistory.length > 0) {
       this.redoStack.push(this.strokeHistory.pop())
     }
+    this.currentBrushStroke = [];
     this.clearScene()
-    this.draw()
+    this.drawStrokeHistory();
+    this.renderDrawing();
   }
 
   redo = () => {
-    if (this.redoStack.length > 1) {
+    if (this.redoStack.length > 0) {
       this.strokeHistory.push(this.redoStack.pop())
     }
-    
     this.clearScene()
-    this.draw()
+    this.drawStrokeHistory();
+    this.renderDrawing();
   }
 
   keyDown = (event) => {
-    event.preventDefault();
+    // event.preventDefault();
     // var brushSize = this.state.brushSize;
     var keydown = (event.key === "[" || event.key === "]");
     switch (event.key) {
@@ -310,9 +333,8 @@ class CanvasController extends React.Component {
         if (brushSize < 5) brushSize += 1;
         else if (brushSize < 10) brushSize += 2;
         else if (brushSize < 50) brushSize += 5;
-        
         if (brushSize > 50) brushSize = 50;
-        this.draw()
+        this.drawUserInput()
         this.drawCursor()
         break;
       case "[":
@@ -321,10 +343,12 @@ class CanvasController extends React.Component {
         else if (brushSize < 10) brushSize -= 2;
         else if (brushSize <= 50) brushSize -= 5;
         if (brushSize <= 0) brushSize = 1;
-        this.draw();
+        this.drawUserInput();
         this.drawCursor();
         break;
       case "z":
+        // console.log(`size of currentStroke = ${this.currentBrushStroke.length}`)
+        // console.log(`size of history = ${this.strokeHistory.length}`)
         this.undo();
         break;
       case "Z":
@@ -367,16 +391,16 @@ class CanvasController extends React.Component {
         width={width} 
         height={height} 
 
-        onPointerDown={this.mouseDown}
-        onPointerUp={this.mouseUp}
-        onPointerCancel={this.mouseUp}
-        onPointerMove={this.mouseMove}
-        onLostPointerCapture={this.mouseUp}
-        onGotPointerCapture={this.mouseDown}
+        onMouseDown={this.mouseDown}
+        onTouchDown={this.mouseDown}
+        onMouseUp={this.mouseUp}
+        onTouchEnd={this.mouseUp}
+        onMouseMove={this.mouseMove}
+        onTouchMove={this.mouseMove}
         
         onPointerOut={(e) => {
-          this.draw()
-          this.endDrawState();
+          this.drawUserInput()
+          this.endBrushStroke();
           mouseDragged = false;
         }}
         
@@ -386,7 +410,7 @@ class CanvasController extends React.Component {
             this.setState({
               mouseOut : false,
             });
-            this.draw();
+            this.drawUserInput();
           }
         }}
         />
