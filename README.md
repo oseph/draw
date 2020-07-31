@@ -14,10 +14,7 @@
 
 I haven't tested this with all browser combinations, but so far:
 
-* :white_check_mark: FireFox macOS
-    * :white_check_mark: Wacom Cintiq
-    * :white_check_mark: Wacom Intuos
-* :white_check_mark: Chrome macOS
+* :white_check_mark: Firefox/Chrome macOS
     * :white_check_mark: Wacom Cintiq
     * :white_check_mark: Wacom Intuos
 * :white_check_mark: Safari iPadOS + Apple Pencil
