@@ -2,7 +2,7 @@
 
 **Requirements**: npm, also see browser/OS compatibility below.
 
-## Installation + Tinkering
+### Installation + Tinkering
 
 * Clone repo. 
 * Change to repo directory.
@@ -10,15 +10,21 @@
 * `npm run start`
 * Enjoy!
 
-### Compatibility:
+### Compatibility
+
+I haven't tested this with all browser combinations, but so far:
+
 * :white_check_mark: FireFox macOS
     * :white_check_mark: Wacom Cintiq
     * :white_check_mark: Wacom Intuos
-* :white_check_mark: Safari iOS + Apple Pencil
-* [ ] Windows 😢
-* [ ] Safari macOS 😢
+* :white_check_mark: Chrome macOS
+    * :white_check_mark: Wacom Cintiq
+    * :white_check_mark: Wacom Intuos
+* :white_check_mark: Safari iPadOS + Apple Pencil
+* :x: Windows 😢
+* :x: Safari macOS 😢
 
-## Amazing Features
+### Amazing Features
 
 * `[` - reduce brush size
 * `]` - increase brush size
