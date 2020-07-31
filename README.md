@@ -1,4 +1,4 @@
-# Web based sketchin
+# Web based sketchin'
 
 **Requirements**: npm, also see browser/OS compatibility below.
 
@@ -11,12 +11,12 @@
 * Enjoy!
 
 ### Compatibility:
-- :white_check_mark: FireFox macOS
-- - :white_check_mark: Wacom Cintiq
-- - :white_check_mark: Wacom Intuos
-- :white_check_mark: Safari iOS + Apple Pencil
-- [ ] Windows 😢
-- [ ] Safari macOS 😢
+* :white_check_mark: FireFox macOS
+    * :white_check_mark: Wacom Cintiq
+    * :white_check_mark: Wacom Intuos
+* :white_check_mark: Safari iOS + Apple Pencil
+* [ ] Windows 😢
+* [ ] Safari macOS 😢
 
 ## Amazing Features
 
